@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>6月自达号业绩看板</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #0f1117;
+  --card: #1a1d27;
+  --border: #2a2d3a;
+  --text: #e4e4e7;
+  --text2: #9ca3af;
+  --accent: #6366f1;
+  --accent2: #818cf8;
+  --green: #22c55e;
+  --red: #ef4444;
+  --orange: #f59e0b;
+  --blue: #3b82f6;
+  --table-head: #1e2130;
+}
+[data-theme="light"] {
+  --bg: #f4f4f6;
+  --card: #ffffff;
+  --border: #e0e0e4;
+  --text: #1c1c28;
+  --text2: #8e8e98;
+  --accent: #6366f1;
+  --accent2: #4f46e5;
+  --green: #16a34a;
+  --red: #dc2626;
+  --orange: #d97706;
+  --blue: #2563eb;
+  --table-head: #f0f0f3;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg); color: var(--text); min-height: 100vh; padding: 24px;
+}
+.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; }
+.header h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.5px; }
+.header .subtitle { color: var(--text2); font-size: 13px; margin-top: 2px; }
+.tabs {
+  display: flex; gap: 4px; background: var(--card); border-radius: 10px;
+  padding: 4px; border: 1px solid var(--border);
+}
+.tab {
+  padding: 7px 16px; border-radius: 7px; font-size: 13px;
+  cursor: pointer; color: var(--text2); transition: all 0.2s;
+  border: none; background: none;
+}
+.tab.active { background: var(--accent); color: #fff; }
+.tab:hover:not(.active) { color: var(--text); }
+.kpi-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px; margin-bottom: 28px;
+}
+.kpi-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 18px 20px;
+}
+.kpi-label { font-size: 12px; color: var(--text2); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+.kpi-value { font-size: 26px; font-weight: 700; letter-spacing: -1px; }
+.kpi-sub { font-size: 12px; color: var(--text2); margin-top: 4px; }
+.kpi-value.green { color: var(--green); }
+.kpi-value.orange { color: var(--orange); }
+.kpi-value.blue { color: var(--blue); }
+.kpi-value.red { color: var(--red); }
+.section { margin-bottom: 28px; }
+.section-title { font-size: 15px; font-weight: 600; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+.section-title::before { content: ''; width: 3px; height: 16px; background: var(--accent); border-radius: 2px; }
+.chart-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 28px;
+}
+.chart-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 20px; display: flex; flex-direction: column;
+}
+.chart-card.full-width { grid-column: 1 / -1; }
+.chart-card-title {
+  font-size: 14px; font-weight: 600; margin-bottom: 12px;
+  display: flex; align-items: center; gap: 8px;
+}
+.chart-canvas-wrap { position: relative; flex: 1; min-height: 320px; }
+.chart-canvas-wrap-sm { position: relative; flex: 1; min-height: 220px; }
+.pie-section { flex: 1; display: flex; flex-direction: column; }
+.pie-sub-title { font-size: 12px; font-weight: 600; margin-bottom: 6px; color: var(--text2); }
+.pie-divider { height: 1px; background: var(--border); margin: 10px 0; }
+table {
+  width: 100%; border-collapse: collapse; font-size: 13px;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; overflow: hidden;
+}
+thead th {
+  background: var(--table-head); padding: 12px 14px;
+  text-align: left; font-weight: 500; color: var(--text2);
+  border-bottom: 1px solid var(--border); white-space: nowrap;
+  cursor: pointer; user-select: none; position: sticky; top: 0;
+}
+thead th.col-resize-handle { cursor: col-resize; }
+thead th:hover { color: var(--text); }
+tbody td { padding: 11px 14px; border-bottom: 1px solid var(--border); color: var(--text); white-space: nowrap; }
+tbody tr:hover { background: rgba(129,140,248,0.05); }
+tbody tr:last-child td { border-bottom: none; }
+.tag { padding: 3px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+.tag-green { background: rgba(34,197,94,0.15); color: var(--green); }
+.tag-orange { background: rgba(245,158,11,0.15); color: var(--orange); }
+.tag-red { background: rgba(239,68,68,0.15); color: var(--red); }
+.rank-badge { display: inline-block; width: 24px; height: 24px; line-height: 24px; text-align: center; border-radius: 6px; font-size: 11px; font-weight: 700; }
+.rank-1 { background: rgba(245,158,11,0.25); color: var(--orange); }
+.rank-2 { background: rgba(156,163,175,0.2); color: #9ca3af; }
+.rank-3 { background: rgba(180,83,9,0.25); color: #b45309; }
+.rank-n { background: transparent; color: var(--text2); }
+.bar-cell { position: relative; }
+.bar-bg { position: absolute; left: 0; top: 0; height: 100%; background: var(--accent); opacity: 0.12; border-radius: 0 4px 4px 0; }
+.hidden { display: none !important; }
+.search-bar {
+  display: flex; gap: 10px; align-items: center; margin-bottom: 14px;
+}
+.search-bar input {
+  width: 240px; padding: 9px 14px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--card);
+  color: var(--text); font-size: 13px; outline: none;
+}
+.search-bar input:focus { border-color: var(--accent); }
+.search-bar select {
+  padding: 9px 14px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--card);
+  color: var(--text); font-size: 13px; outline: none; cursor: pointer;
+}
+.table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); }
+/* Agency cards */
+.agency-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+.agency-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 18px 20px;
+}
+.agency-name { font-size: 15px; font-weight: 600; margin-bottom: 14px; color: var(--accent2); }
+.agency-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 13px; }
+.agency-row .label { color: var(--text2); }
+.agency-row .value { font-weight: 600; }
+.agency-bar { height: 6px; border-radius: 3px; background: var(--border); margin-top: 10px; overflow: hidden; }
+.agency-bar-fill { height: 100%; border-radius: 3px; background: var(--accent); opacity: 0.6; transition: width 0.6s; }
+/* Modal */
+.modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 1000; background: rgba(0,0,0,0.7); align-items: center; justify-content: center; }
+.modal-overlay.flex { display: flex; }
+.modal-box { background: var(--card); border-radius: 16px; padding: 24px; width: 90%; max-width: 860px; max-height: 85vh; overflow-y: auto; position: relative; }
+.modal-close { position: sticky; top: 0; float: right; background: none; border: none; color: var(--text2); font-size: 24px; cursor: pointer; z-index: 10; line-height: 1; }
+.modal-title { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+.modal-subtitle { font-size: 12px; color: var(--text2); margin-bottom: 14px; }
+.drill-filter-bar { display: flex; gap: 6px; margin-bottom: 12px; }
+.drill-filter-btn {
+  padding: 4px 12px; border-radius: 6px; border: 1px solid var(--border);
+  background: transparent; color: var(--text2); font-size: 12px; cursor: pointer; transition: all 0.2s;
+}
+.drill-filter-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.drill-up { color: var(--green); font-weight: 600; }
+.drill-down { color: var(--red); font-weight: 600; }
+.drill-modal-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.drill-modal-table thead th { padding: 10px 12px; text-align: center; }
+.drill-modal-table tbody td { padding: 8px 12px; text-align: center; }
+.drill-modal-table tbody tr:hover { background: rgba(129,140,248,0.05); }
+.show-all-btn {
+  margin-left: 8px; padding: 3px 10px; border-radius: 5px; font-size: 11px;
+  border: 1px solid var(--border); background: transparent; color: var(--text2); cursor: pointer;
+}
+.show-all-btn:hover { color: var(--text); border-color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>6月自达号业绩看板</h1>
+    <div class="subtitle">自达号专项 · 共 7 个子机构 · <span id="updateTime"></span></div>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <div class="tabs">
+      <button class="tab active" onclick="switchView('anchors')">达人明细</button>
+      <button class="tab" onclick="switchView('agencies')">机构汇总</button>
+    </div>
+    <button id="themeToggle" onclick="toggleTheme()" title="切换浅色/深色主题" style="width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:var(--card);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;color:var(--text);line-height:1;">🌙</button>
+  </div>
+</div>
+
+<div class="kpi-grid" id="kpiGrid"></div>
+
+<div class="chart-grid" id="mainChartGrid">
+  <div class="chart-card full-width" id="totalTrendCard">
+    <div class="chart-card-title">自达号每日总业绩趋势</div>
+    <div class="chart-canvas-wrap"><canvas id="totalTrendChart"></canvas></div>
+  </div>
+  <div class="chart-card" id="agencyTrendCard">
+    <div class="chart-card-title">子机构每日业绩趋势</div>
+    <div class="chart-canvas-wrap"><canvas id="agencyTrendChart"></canvas></div>
+  </div>
+  <div class="chart-card" id="pieCard">
+    <div class="chart-card-title">子机构业绩占比</div>
+    <div class="pie-section">
+      <div class="chart-canvas-wrap-sm"><canvas id="agencyPieChart"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<div id="anchorsView" class="section">
+  <div class="search-bar">
+    <input type="text" id="searchInput" placeholder="搜索达人名称 / 抖音号..." onkeydown="if(event.key==='Enter')filterAnchors()">
+    <button onclick="filterAnchors()" style="padding:9px 16px;border-radius:8px;border:1px solid var(--accent);background:rgba(99,102,241,0.15);color:var(--accent2);font-size:13px;cursor:pointer;white-space:nowrap;">查询</button>
+    <select id="agencyFilter" onchange="filterAnchors()">
+      <option value="">全部子机构</option>
+    </select>
+  </div>
+  <div class="table-wrap">
+    <table id="anchorTable">
+      <thead><tr id="anchorHead"></tr></thead>
+      <tbody id="anchorBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div id="agenciesView" class="section hidden">
+  <div class="agency-grid" id="agencyGrid"></div>
+</div>
+
+<!-- GMV/ROI drill modal -->
+<div id="drillModal" class="modal-overlay">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeDrillModal()">&times;</button>
+    <div class="modal-title" id="drillTitle"></div>
+    <div class="chart-canvas-wrap" style="height:280px;"><canvas id="drillChart"></canvas></div>
+  </div>
+</div>
+
+<!-- Agency drill (Top5) modal -->
+<div id="agencyDrillModal" class="modal-overlay">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeAgencyDrill()">&times;</button>
+    <div class="modal-title" id="agencyDrillTitle"></div>
+    <button id="agencyDrillShowAllBtn" class="show-all-btn" style="margin-bottom:8px;display:none;" onclick="resetAgencyDrillFocus()">全部显示</button>
+    <div class="chart-canvas-wrap" style="height:360px;"><canvas id="agencyDrillChart"></canvas></div>
+  </div>
+</div>
+
+<!-- Zidahao/Sub drill (person change table) modal -->
+<div id="personDrillModal" class="modal-overlay">
+  <div class="modal-box" style="max-width:780px;">
+    <button class="modal-close" onclick="closePersonDrillModal()">&times;</button>
+    <div class="modal-title" id="personDrillTitle"></div>
+    <div class="modal-subtitle" id="personDrillSubtitle"></div>
+    <div class="drill-filter-bar" id="personDrillFilter">
+      <button class="drill-filter-btn active" data-filter="all" onclick="filterPersonDrill('all')">全部</button>
+      <button class="drill-filter-btn" data-filter="down" onclick="filterPersonDrill('down')">↓ 仅下降</button>
+      <button class="drill-filter-btn" data-filter="up" onclick="filterPersonDrill('up')">↑ 仅上涨</button>
+    </div>
+    <div style="max-height:55vh;overflow-y:auto;">
+      <table class="drill-modal-table">
+        <thead><tr id="personDrillHead"></tr></thead>
+        <tbody id="personDrillBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Zidahao ROI drill modal -->
+<div id="zidahaoRoiDrillModal" class="modal-overlay">
+  <div class="modal-box" style="max-width:800px;">
+    <button class="modal-close" onclick="document.getElementById('zidahaoRoiDrillModal').style.display='none'">&times;</button>
+    <div class="modal-title" id="zidahaoRoiDrillTitle">自达号 · 各机构每日 ROI 趋势</div>
+    <button id="roiDrillShowAllBtn" class="show-all-btn" style="margin-bottom:8px;display:none;" onclick="resetRoiDrill()">全部显示</button>
+    <div class="chart-canvas-wrap" style="height:380px;"><canvas id="zidahaoRoiDrillChart"></canvas></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// Global state
+// ═══════════════════════════════════════════════
+let DATA = null;
+let sortCol = '直播GMV';
+let sortDir = -1;
+let currentTheme = 'dark';
+let colWidths = {}; // colKey → px width
+
+const ZDH_SUB_AGENCIES = ['花开自达号', '集米自达号', '太古自达号', '九三自达号', '直属自达号', '半兆自达号', '久酒自达号'];
+const ZDH_PIE_COLORS = ['#818cf8','#22c55e','#f59e0b','#ec4899','#14b8a6','#f97316','#a78bfa'];
+const ZDH_LINE_COLORS = ['#818cf8','#22c55e','#f59e0b','#ec4899','#14b8a6','#f97316','#a78bfa'];
+
+const DISPLAY_COLS = ['主播昵称', '机构', '开播天数', '日均开播时长（小时）', '直播GMV', '直播支付GMV', '直播退款GMV', '直播结算GMV', '结算率', 'ROI', '佣金支出', '投放消耗金额'];
+
+// ═══════════════════════════════════════════════
+// Theme & colors
+// ═══════════════════════════════════════════════
+function getChartColors() {
+  if (currentTheme === 'light') {
+    return { grid: '#e8e8ec', tick: '#8e8e98', legend: '#8e8e98',
+      tooltipBg: '#ffffff', tooltipTitle: '#1c1c28', tooltipBody: '#6b7280', tooltipBorder: '#e0e0e4' };
+  }
+  return { grid: '#2a2d3a', tick: '#9ca3af', legend: '#9ca3af',
+    tooltipBg: '#1e2130', tooltipTitle: '#e4e4e7', tooltipBody: '#9ca3af', tooltipBorder: '#2a2d3a' };
+}
+
+function applyTheme(theme) {
+  currentTheme = theme;
+  document.documentElement.setAttribute('data-theme', theme);
+  document.getElementById('themeToggle').textContent = theme === 'light' ? '☀️' : '🌙';
+  localStorage.setItem('zdhDashboardTheme', theme);
+  if (DATA) renderAllCharts();
+}
+
+function toggleTheme() { applyTheme(currentTheme === 'dark' ? 'light' : 'dark'); }
+
+(function() { applyTheme(localStorage.getItem('zdhDashboardTheme') || 'dark'); })();
+
+// ═══════════════════════════════════════════════
+// Data loading
+// ═══════════════════════════════════════════════
+fetch('data/zidahao_data.json?t=' + Date.now()).then(r => r.json()).then(d => {
+  DATA = d;
+  render();
+}).catch(e => { console.error('Failed to load zidahao data:', e); });
+
+// ═══════════════════════════════════════════════
+// Utility
+// ═══════════════════════════════════════════════
+function fmt(v, type) {
+  if (v === null || v === undefined || v === '' || v === 'None') return '-';
+  if (type === 'money') {
+    let n = parseFloat(v); if (isNaN(n)) return v;
+    if (Math.abs(n) >= 10000) return '¥' + (n/10000).toFixed(2) + '万';
+    return '¥' + n.toLocaleString('zh-CN', {minimumFractionDigits: 0, maximumFractionDigits: 2});
+  }
+  if (type === 'pct') {
+    let n = parseFloat(v); if (isNaN(n)) return v;
+    return (n * 100).toFixed(1) + '%';
+  }
+  if (type === 'num') {
+    let n = parseFloat(v); if (isNaN(n)) return v;
+    return n.toLocaleString();
+  }
+  return v;
+}
+
+function getColType(col) {
+  if (!col) return '';
+  if (col.includes('GMV') || col.includes('支付') || col.includes('退款') || col.includes('佣金') || col.includes('消耗') || col.includes('金额')) return 'money';
+  if (col.includes('率') || col.includes('占比')) return 'pct';
+  if (col === '开播天数') return 'num';
+  return '';
+}
+
+// Month boundary line plugin
+Chart.register({
+  id: 'monthBoundaryLine',
+  afterDraw: function(chart) {
+    var labels = chart.data.labels;
+    if (!labels || labels.length < 2) return;
+    var firstMonth = labels[0].split('/')[0];
+    var boundaryIdx = -1;
+    for (var i = 1; i < labels.length; i++) {
+      if (labels[i].split('/')[0] !== firstMonth) { boundaryIdx = i; break; }
+    }
+    if (boundaryIdx < 0) return;
+    var xScale = chart.scales.x, yScale = chart.scales.y;
+    if (!xScale || !yScale) return;
+    var x = xScale.getPixelForValue(boundaryIdx - 0.5);
+    var ctx = chart.ctx; ctx.save();
+    ctx.beginPath(); ctx.setLineDash([6, 4]);
+    ctx.strokeStyle = currentTheme === 'light' ? '#52525b' : '#9ca3af';
+    ctx.lineWidth = 1.5;
+    ctx.moveTo(x, yScale.top); ctx.lineTo(x, yScale.bottom);
+    ctx.stroke(); ctx.restore();
+  }
+});
+
+// ═══════════════════════════════════════════════
+// Main render
+// ═══════════════════════════════════════════════
+function render() {
+  if (!DATA) return;
+  document.getElementById('updateTime').textContent = new Date().toLocaleString('zh-CN');
+  renderKPIs();
+  renderAllCharts();
+  renderAnchorTable();
+  renderAgencies();
+  populateFilters();
+}
+
+function renderKPIs() {
+  const s = DATA.summary;
+  if (!s) return;
+  const total = s['直播GMV'] || 0;
+  const paid = s['直播支付GMV'] || 0;
+  const settled = s['直播结算GMV'] || 0;
+  const adCost = s['消耗金额'] || 0;
+  const roi = s['ROI'] || 0;
+  const html = `
+    <div class="kpi-card">
+      <div class="kpi-label">直播总成交金额</div>
+      <div class="kpi-value">${fmt(total, 'money')}</div>
+      <div class="kpi-sub">${DATA.anchors ? DATA.anchors.length : 0} 位达人 · ${DATA.current_month || ''}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">直播支付GMV</div>
+      <div class="kpi-value">${fmt(paid, 'money')}</div>
+      <div class="kpi-sub">支付率 ${total > 0 ? ((paid/total)*100).toFixed(1) : '0'}%</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">直播结算GMV</div>
+      <div class="kpi-value green">${fmt(settled, 'money')}</div>
+      <div class="kpi-sub">结算率 ${total > 0 ? ((settled/total)*100).toFixed(1) : '0'}%</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">投放消耗金额</div>
+      <div class="kpi-value orange">${fmt(adCost, 'money')}</div>
+      <div class="kpi-sub">费比 ${total > 0 ? ((adCost/total)*100).toFixed(1) : '0'}%</div>
+    </div>
+    <div class="kpi-card" style="cursor:pointer" onclick="showZidahaoRoiDrill()" title="点击查看各机构每日 ROI 趋势">
+      <div class="kpi-label">ROI</div>
+      <div class="kpi-value blue">${parseFloat(roi).toFixed(1)}</div>
+      <div class="kpi-sub">GMV / 投放消耗 · 点击看趋势</div>
+    </div>
+  `;
+  document.getElementById('kpiGrid').innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════
+// Charts
+// ═══════════════════════════════════════════════
+function renderAllCharts() {
+  if (!DATA) return;
+  // Destroy existing charts
+  ['__totalChart','__agencyChart','__agencyPieChart'].forEach(k => {
+    if (window[k]) { window[k].destroy(); window[k] = null; }
+  });
+
+  const cc = getChartColors();
+  const dates = DATA.trend_dates || [];
+  if (dates.length === 0) return;
+
+  const chartOpts = {
+    responsive: true, maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { position: 'top', labels: { color: cc.legend, font: { size: 11 }, boxWidth: 12, padding: 14, usePointStyle: true, pointStyle: 'circle' }},
+      tooltip: {
+        backgroundColor: cc.tooltipBg, titleColor: cc.tooltipTitle, bodyColor: cc.tooltipBody,
+        borderColor: cc.tooltipBorder, borderWidth: 1, padding: 10, cornerRadius: 8,
+        callbacks: { label: ctx => ctx.dataset.label + ': ¥' + ctx.parsed.y.toFixed(1) + '万' }
+      }
+    },
+    scales: {
+      x: { grid: { color: cc.grid }, ticks: { color: cc.tick, font: { size: 10 },
+        callback: function(val, index, ticks) {
+          var label = this.getLabelForValue(val);
+          if (index > 0 && ticks[index - 1]) {
+            var prevLabel = this.getLabelForValue(ticks[index - 1].value);
+            if (prevLabel && label && label.split('/')[0] !== prevLabel.split('/')[0]) return label;
+          }
+          var step = Math.max(1, Math.ceil(ticks.length / 6));
+          if (index % step === 0 || index === ticks.length - 1) return label;
+          return '';
+        }
+      }},
+      y: { grid: { color: cc.grid }, ticks: { color: cc.tick, font: { size: 10 }, callback: v => v + '万' }}
+    }
+  };
+
+  // Chart 1: 自达号总业绩趋势
+  const totalCtx = document.getElementById('totalTrendChart').getContext('2d');
+  window.__totalChart = new Chart(totalCtx, {
+    type: 'line',
+    data: {
+      labels: dates,
+      datasets: [
+        { label: '成交金额', data: DATA.daily_gmv || [], borderColor: '#818cf8', backgroundColor: 'rgba(129,140,248,0.12)', borderWidth: 2.5, pointRadius: 3, pointHoverRadius: 6, fill: true, tension: 0.35 },
+        { label: '用户支付', data: DATA.daily_paid || [], borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,0.06)', borderWidth: 2, pointRadius: 2, fill: true, tension: 0.35 },
+        { label: '退款金额', data: DATA.daily_refund || [], borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.06)', borderWidth: 2, pointRadius: 2, borderDash: [5,3], fill: true, tension: 0.35 }
+      ]
+    },
+    options: {
+      ...chartOpts,
+      onClick: function(evt, elements) {
+        if (!elements || elements.length === 0) return;
+        showZidahaoDrill(elements[0].index);
+      }
+    }
+  });
+
+  // Chart 2: 子机构趋势 (7 sub-agencies including 半兆 and 久酒)
+  const agencyCtx = document.getElementById('agencyTrendChart').getContext('2d');
+  const agencyDatasets = ZDH_SUB_AGENCIES.map((sub, i) => ({
+    label: sub,
+    data: (DATA.daily_by_sub || {})[sub] || [],
+    borderColor: ZDH_LINE_COLORS[i % ZDH_LINE_COLORS.length],
+    backgroundColor: 'transparent',
+    borderWidth: 2, pointRadius: 2, pointHoverRadius: 5, tension: 0.35
+  }));
+  window.__agencyFocusMode = false;
+  window.__agencyChart = new Chart(agencyCtx, {
+    type: 'line',
+    data: { labels: dates, datasets: agencyDatasets },
+    options: {
+      ...chartOpts,
+      onClick: function(evt, elements) {
+        if (!elements || elements.length === 0) return;
+        var datasetIdx = elements[0].datasetIndex;
+        var dateIdx = elements[0].index;
+        var subName = ZDH_SUB_AGENCIES[datasetIdx];
+        showZidahaoSubDrill(subName, dateIdx);
+      },
+      plugins: {
+        ...chartOpts.plugins,
+        legend: {
+          ...chartOpts.plugins.legend,
+          position: 'top',
+          labels: { ...chartOpts.plugins.legend.labels, font: { size: 10 }, padding: 10 },
+          onClick: function(evt, legendItem, legend) {
+            const chart = legend.chart;
+            const clickedIdx = legendItem.datasetIndex;
+            const total = chart.data.datasets.length;
+            if (window.__agencyFocusMode) {
+              for (let i = 0; i < total; i++) chart.getDatasetMeta(i).hidden = false;
+              window.__agencyFocusMode = false;
+            } else {
+              for (let i = 0; i < total; i++) chart.getDatasetMeta(i).hidden = (i !== clickedIdx);
+              window.__agencyFocusMode = true;
+            }
+            chart.update();
+          }
+        }
+      }
+    }
+  });
+
+  // Chart 3: 子机构占比饼图
+  const pieCtx = document.getElementById('agencyPieChart').getContext('2d');
+  const pieData = DATA.pie_data || [];
+  window.__agencyPieChart = new Chart(pieCtx, {
+    type: 'doughnut',
+    data: {
+      labels: pieData.map(p => p.name),
+      datasets: [{
+        data: pieData.map(p => p.value),
+        backgroundColor: pieData.map((_, i) => ZDH_PIE_COLORS[i % ZDH_PIE_COLORS.length]),
+        borderColor: currentTheme === 'light' ? '#ffffff' : '#1a1d27',
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      onClick: function(evt, elements) {
+        if (!elements || elements.length === 0) return;
+        const idx = elements[0].index;
+        const subName = pieData[idx].name;
+        const subColor = ZDH_PIE_COLORS[idx % ZDH_PIE_COLORS.length];
+        showAgencyDrill(subName, subColor);
+      },
+      plugins: {
+        legend: {
+          position: 'right',
+          labels: { color: cc.legend, font: { size: 11 }, padding: 10, boxWidth: 12 }
+        },
+        tooltip: {
+          backgroundColor: cc.tooltipBg, titleColor: cc.tooltipTitle, bodyColor: cc.tooltipBody,
+          borderColor: cc.tooltipBorder, borderWidth: 1,
+          callbacks: {
+            label: ctx => {
+              const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+              const pct = ((ctx.parsed / total) * 100).toFixed(1);
+              return `${ctx.label}: ¥${ctx.parsed.toFixed(1)}万 (${pct}%)`;
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════
+// Anchor table
+// ═══════════════════════════════════════════════
+let savedColOrder = null;
+
+function renderAnchorTable() {
+  if (!DATA || !DATA.anchors) return;
+  let anchors = [...DATA.anchors];
+
+  // Sort
+  anchors.sort((a, b) => {
+    let va, vb;
+    if (sortCol === 'ROI') {
+      va = (parseFloat(a['投放消耗金额']) || 0) > 0 ? (parseFloat(a['直播GMV']) || 0) / (parseFloat(a['投放消耗金额']) || 1) : 0;
+      vb = (parseFloat(b['投放消耗金额']) || 0) > 0 ? (parseFloat(b['直播GMV']) || 0) / (parseFloat(b['投放消耗金额']) || 1) : 0;
+    } else if (sortCol === '时均 GMV') {
+      va = (a['开播天数'] > 0 && a['日均开播时长（小时）'] > 0) ? (parseFloat(a['直播GMV']) || 0) / a['开播天数'] / a['日均开播时长（小时）'] : 0;
+      vb = (b['开播天数'] > 0 && b['日均开播时长（小时）'] > 0) ? (parseFloat(b['直播GMV']) || 0) / b['开播天数'] / b['日均开播时长（小时）'] : 0;
+    } else {
+      va = parseFloat(a[sortCol]) || 0;
+      vb = parseFloat(b[sortCol]) || 0;
+    }
+    return (va - vb) * sortDir;
+  });
+
+  // Filter
+  const search = (document.getElementById('searchInput')?.value || '').toLowerCase();
+  const agencyVal = document.getElementById('agencyFilter')?.value || '';
+  if (search || agencyVal) {
+    anchors = anchors.filter(a => {
+      let match = true;
+      if (search) match = match && ((a['主播昵称']||'').toLowerCase().includes(search) || (a['主播抖音号']||'').toString().includes(search));
+      if (agencyVal) match = match && (a['机构']||'') === agencyVal;
+      return match;
+    });
+  }
+
+  const maxGMV = Math.max(...DATA.anchors.map(a => parseFloat(a['直播GMV']) || 0));
+  const cols = getCols();
+
+  // Head
+  let headHtml = '';
+  cols.forEach(col => {
+    const arrow = sortCol === col ? (sortDir === -1 ? ' ↓' : ' ↑') : '';
+    headHtml += `<th class="col-resize-handle" data-col="${col}" onclick="sortBy('${col}')">${col}${arrow}</th>`;
+  });
+  document.getElementById('anchorHead').innerHTML = '<th style="width:40px;">#</th>' + headHtml;
+
+  // Body
+  let bodyHtml = '';
+  anchors.forEach((a, i) => {
+    const rank = i + 1;
+    let rankClass = rank <= 3 ? `rank-${rank}` : 'rank-n';
+    const douyinId = a['主播抖音号'] || '';
+    bodyHtml += `<tr data-douyin="${douyinId}" data-name="${a['主播昵称'] || ''}">`;
+    bodyHtml += `<td><span class="rank-badge ${rankClass}">${rank}</span></td>`;
+    cols.forEach(col => {
+      let val = a[col];
+      let type = getColType(col);
+      if (col === '主播昵称') {
+        bodyHtml += `<td><div style="font-weight:500">${val || '-'}</div></td>`;
+      } else if (col === '直播GMV' && val && maxGMV > 0) {
+        let pct = ((parseFloat(val)/maxGMV)*100).toFixed(0);
+        const did = String(douyinId).replace(/'/g, "\\'");
+        const dname = String(a['主播昵称'] || '').replace(/'/g, "\\'");
+        bodyHtml += `<td class="bar-cell" style="cursor:pointer" onclick="showDrillDown('${did}', '${dname}')"><span style="position:relative;z-index:1;font-weight:500;">${fmt(val, type)}</span><div class="bar-bg" style="width:${pct}%"></div></td>`;
+      } else if (col === '结算率') {
+        let num = parseFloat(val);
+        let cls = num >= 0.4 ? 'tag-green' : num >= 0.2 ? 'tag-orange' : 'tag-red';
+        bodyHtml += `<td><span class="tag ${cls}" style="font-size:15px;font-weight:600;">${fmt(val, 'pct')}</span></td>`;
+      } else if (col === 'ROI') {
+        const gmv = parseFloat(a['直播GMV']) || 0;
+        const adCost = parseFloat(a['投放消耗金额']) || 0;
+        const roi = adCost > 0 ? (gmv / adCost) : 0;
+        const did = String(douyinId).replace(/'/g, "\\'");
+        const dname = String(a['主播昵称'] || '').replace(/'/g, "\\'");
+        let display = roi > 0 ? roi.toFixed(1) : '-';
+        bodyHtml += `<td style="cursor:pointer;font-size:15px;font-weight:600;" onclick="showRoiDrill('${did}', '${dname}')">${display}</td>`;
+      } else if (col === '日均开播时长（小时）') {
+        bodyHtml += `<td>${parseFloat(val) ? parseFloat(val).toFixed(1) : '-'}</td>`;
+      } else if (col === '时均 GMV') {
+        const gmv = parseFloat(a['直播GMV']) || 0;
+        const days = parseFloat(a['开播天数']) || 0;
+        const hours = parseFloat(a['日均开播时长（小时）']) || 0;
+        const hourlyGmv = (days > 0 && hours > 0) ? (gmv / days / hours) : 0;
+        bodyHtml += `<td>${hourlyGmv > 0 ? fmt(hourlyGmv, 'money') : '-'}</td>`;
+      } else {
+        bodyHtml += `<td>${fmt(val, type)}</td>`;
+      }
+    });
+    bodyHtml += '</tr>';
+  });
+  document.getElementById('anchorBody').innerHTML = bodyHtml;
+}
+
+function getCols() {
+  return savedColOrder || DISPLAY_COLS;
+}
+
+function sortBy(col) {
+  if (sortCol === col) sortDir *= -1;
+  else { sortCol = col; sortDir = -1; }
+  renderAnchorTable();
+}
+
+function filterAnchors() { renderAnchorTable(); }
+
+function populateFilters() {
+  if (!DATA || !DATA.anchors) return;
+  const set = new Set();
+  DATA.anchors.forEach(a => { if (a['机构']) set.add(a['机构']); });
+  const sel = document.getElementById('agencyFilter');
+  sel.innerHTML = '<option value="">全部子机构</option>';
+  [...set].sort().forEach(v => {
+    let opt = document.createElement('option');
+    opt.value = v; opt.textContent = v;
+    sel.appendChild(opt);
+  });
+}
+
+// ═══════════════════════════════════════════════
+// Agencies view
+// ═══════════════════════════════════════════════
+function renderAgencies() {
+  if (!DATA || !DATA.sub_agencies) return;
+  const filtered = DATA.sub_agencies.filter(a => ZDH_SUB_AGENCIES.includes(a['机构']));
+  const maxAgencyGMV = Math.max(1, ...filtered.map(a => parseFloat(a['直播GMV']) || 0));
+  let html = '';
+  filtered.forEach(a => {
+    let name = a['机构'] || '未知';
+    let count = a['机构达人数'] || 0;
+    let gmv = parseFloat(a['直播GMV']) || 0;
+    let avgGMV = parseFloat(a['人均直播GMV']) || 0;
+    let settled = parseFloat(a['直播结算GMV']) || 0;
+    let rate = gmv > 0 ? (settled / gmv) : 0;
+    let ad = parseFloat(a['投放消耗金额']) || 0;
+    let agencyRoi = ad > 0 ? (gmv / ad) : null;
+    let pct = ((gmv/maxAgencyGMV)*100).toFixed(0);
+
+    html += `
+    <div class="agency-card">
+      <div class="agency-name">${name}</div>
+      <div class="agency-row"><span class="label">达人数</span><span class="value">${count}</span></div>
+      <div class="agency-row"><span class="label">直播GMV</span><span class="value" style="color:var(--accent2)">¥${(gmv/10000).toFixed(1)}万</span></div>
+      <div class="agency-row"><span class="label">人均GMV</span><span class="value">¥${(avgGMV/10000).toFixed(1)}万</span></div>
+      <div class="agency-row"><span class="label">结算GMV</span><span class="value">¥${(settled/10000).toFixed(1)}万</span></div>
+      <div class="agency-row"><span class="label">结算率</span><span class="value"><span class="tag ${rate >= 0.4 ? 'tag-green' : rate >= 0.2 ? 'tag-orange' : 'tag-red'}">${(rate*100).toFixed(1)}%</span></span></div>
+      <div class="agency-row"><span class="label">机构ROI</span><span class="value">${agencyRoi !== null ? agencyRoi.toFixed(2) : '-'}</span></div>
+      <div class="agency-bar"><div class="agency-bar-fill" style="width:${pct}%"></div></div>
+    </div>`;
+  });
+  document.getElementById('agencyGrid').innerHTML = html;
+}
+
+function switchView(view) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    t.classList.toggle('active', (view === 'anchors' && i === 0) || (view === 'agencies' && i === 1));
+  });
+  document.getElementById('anchorsView').classList.toggle('hidden', view !== 'anchors');
+  document.getElementById('agenciesView').classList.toggle('hidden', view !== 'agencies');
+}
+
+// ═══════════════════════════════════════════════
+// GMV Drill (达人分天支付)
+// ═══════════════════════════════════════════════
+function showDrillDown(douyinId, name) {
+  if (!douyinId) return;
+  const cc = getChartColors();
+  const daily = DATA.anchor_daily_paid ? DATA.anchor_daily_paid[douyinId] : null;
+  if (!daily || Object.keys(daily).length === 0) { alert(name + ' 暂无分天支付数据'); return; }
+  document.getElementById('drillTitle').textContent = name + ' - 每日支付 GMV 趋势';
+  document.getElementById('drillModal').style.display = 'flex';
+  const dates = DATA.trend_dates || [];
+  const values = dates.map(d => daily[d] || 0);
+  const ctx = document.getElementById('drillChart').getContext('2d');
+  if (window.__drillChart) window.__drillChart.destroy();
+  window.__drillChart = new Chart(ctx, {
+    type: 'line', data: { labels: dates, datasets: [{ label: '支付 GMV（万）', data: values, borderColor: '#818cf8', backgroundColor: 'rgba(129,140,248,0.15)', borderWidth: 2.5, pointRadius: 4, pointHoverRadius: 7, fill: true, tension: 0.35 }] },
+    options: { responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { backgroundColor: cc.tooltipBg, titleColor: cc.tooltipTitle, bodyColor: cc.tooltipBody, borderColor: cc.tooltipBorder, borderWidth: 1, callbacks: { label: ctx => '¥' + ctx.parsed.y.toFixed(2) + '万' } } },
+      scales: { x: { grid: { color: cc.grid }, ticks: { color: cc.tick, font: { size: 11 } } }, y: { grid: { color: cc.grid }, ticks: { color: cc.tick, font: { size: 11 }, callback: v => v + '万' } } }
+    }
+  });
+}
+
+function closeDrillModal() { document.getElementById('drillModal').style.display = 'none'; }
+
+// ═══════════════════════════════════════════════
+// ROI Drill (达人分天ROI)
+// ═══════════════════════════════════════════════
+function showRoiDrill(douyinId, name) {
+  if (!douyinId) return;
+  const cc = getChartColors();
+  const daily = DATA.anchor_daily_roi ? DATA.anchor_daily_roi[douyinId] : null;
+  if (!daily || Object.keys(daily).length === 0) { alert(name + ' 暂无分天 ROI 数据（无投放记录）'); return; }
+  document.getElementById('drillTitle').textContent = name + ' - 每日 ROI 趋势（GMV / 投放消耗）';
+  document.getElementById('drillModal').style.display = 'flex';
+  const dates = DATA.trend_dates || [];
+  const values = dates.map(d => daily[d] || 0);
+  const ctx = document.getElementById('drillChart').getContext('2d');
+  if (window.__drillChart) window.__drillChart.destroy();
+  window.__drillChart = new Chart(ctx, {
+    type: 'line', data: { labels: dates, datasets: [{ label: 'ROI', data: values, borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.15)', borderWidth: 2.5, pointRadius: 4, pointHoverRadius: 7, fill: true, tension: 0.35 }] },
+    options: { responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { backgroundColor: cc.tooltipBg, titleColor: cc.tooltipTitle, bodyColor: cc.tooltipBody, borderColor: cc.tooltipBorder, borderWidth: 1, callbacks: { label: ctx => 'ROI: ' + ctx.parsed.y.toFixed(2) } } },
+      scales: { x: { grid: { color: cc.grid }, ticks: { color: cc.tick, font: { size: 11 } } }, y: { grid: { color: cc.grid }, ticks: { color: cc.tick, font: { size: 11 } } } }
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════
+// Agency drill (Top5 pie click)
+// ═══════════════════════════════════════════════
+function showAgencyDrill(subName, subColor) {
+  const top5 = DATA.top5_by_sub ? DATA.top5_by_sub[subName] : null;
+  if (!top5 || top5.length === 0) { alert(subName + ' 暂无 Top 5 达人分天数据'); return; }
+
+  document.getElementById('agencyDrillTitle').textContent = subName + ' · Top 5 达人分天支付 GMV 趋势';
+  document.getElementById('agencyDrillShowAllBtn').style.display = 'none';
+  document.getElementById('agencyDrillModal').style.display = 'flex';
+
+  const cc = getChartColors();
+  const dates = DATA.trend_dates || [];
+  const datasetColors = ['#818cf8','#22c55e','#f59e0b','#ec4899','#14b8a6'];
+  const ctx = document.getElementById('agencyDrillChart').getContext('2d');
+  if (window.__agencyDrillChart) window.__agencyDrillChart.destroy();
+  window.__agencyDrillFocusMode = false;
+
+  window.__agencyDrillChart = new Chart(ctx, {
+    type: 'line', data: {
+      labels: dates,
+      datasets: top5.map((a, i) => ({
+        label: a.name, data: a.daily_paid || [], borderColor: datasetColors[i % 5], backgroundColor: 'transparent', borderWidth: 2, pointRadius: 2, pointHoverRadius: 5, tension: 0.35
+      }))
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      onClick: function(evt, elements) {
+        const chart = window.__agencyDrillChart;
+        if (!chart) return;
+        if (elements.length === 0) {
+          if (window.__agencyDrillFocusMode) {
+            for (let i = 0; i < chart.data.datasets.length; i++) chart.getDatasetMeta(i).hidden = false;
+            window.__agencyDrillFocusMode = false;
+            document.getElementById('agencyDrillShowAllBtn').style.display = 'none';
+            chart.update();
+          }
+          return;
+        }
+        const clickedIdx = elements[0].datasetIndex;
+        for (let i = 0; i < chart.data.datasets.length; i++) chart.getDatasetMeta(i).hidden = (i !== clickedIdx);
+        window.__agencyDrillFocusMode = true;
+        document.getElementById('agencyDrillShowAllBtn').style.display = 'inline-block';
+        chart.update();
+      },
+      plugins: {
+        legend: { position: 'top', labels: { color: cc.legend, font: { size: 11 }, padding: 12, boxWidth: 12, usePointStyle: true, pointStyle: 'circle' },
+          onClick: function(evt, legendItem, legend) {
+            const chart = legend.chart;
+            const idx = legendItem.datasetIndex;
+            const meta = chart.getDatasetMeta(idx);
+            meta.hidden = !meta.hidden;
+            chart.update();
+            const anyHidden = chart.data.datasets.some((_, i) => chart.getDatasetMeta(i).hidden);
+            document.getElementById('agencyDrillShowAllBtn').style.display = anyHidden ? 'inline-block' : 'none';
+          }
+        },
+        tooltip: { backgroundColor: cc.tooltipBg, titleColor: cc.tooltipTitle, bodyColor: cc.tooltipBody, borderColor: cc.tooltipBorder, borderWidth: 1, callbacks: { label: ctx => ctx.dataset.label + ': ¥' + ctx.parsed.y.toFixed(2) + '万' } }
+      },
+      scales: { x: { grid: { color: cc.grid }, ticks: { color: cc.tick, font: { size: 10 } } }, y: { grid: { color: cc.grid }, ticks: { color: cc.tick, font: { size: 10 }, callback: v => v + '万' } } }
+    }
+  });
+}
+
+function resetAgencyDrillFocus() {
+  const chart = window.__agencyDrillChart;
+  if (!chart) return;
+  for (let i = 0; i < chart.data.datasets.length; i++) chart.getDatasetMeta(i).hidden = false;
+  window.__agencyDrillFocusMode = false;
+  document.getElementById('agencyDrillShowAllBtn').style.display = 'none';
+  chart.update();
+}
+
+function closeAgencyDrill() { document.getElementById('agencyDrillModal').style.display = 'none'; }
+
+// ═══════════════════════════════════════════════
+// Zidahao drills (person change table)
+// ═══════════════════════════════════════════════
+function showZidahaoDrill(dateIndex) {
+  if (!DATA || !DATA.anchor_detail || DATA.anchor_detail.length === 0) { alert('暂无自达号达人明细数据'); return; }
+  var detail = DATA.anchor_detail;
+  var dates = DATA.trend_dates || [];
+  var clickedDate = dates[dateIndex] || '--';
+  var prevDate = dateIndex > 0 ? dates[dateIndex - 1] : null;
+  var todayTotal = (DATA.daily_paid && DATA.daily_paid[dateIndex] != null) ? DATA.daily_paid[dateIndex] : 0;
+  var yesterdayTotal = prevDate ? (DATA.daily_paid && DATA.daily_paid[dateIndex - 1] != null ? DATA.daily_paid[dateIndex - 1] : 0) : 0;
+  var totalChange = prevDate ? (todayTotal - yesterdayTotal) : 0;
+
+  var rows = [];
+  for (var i = 0; i < detail.length; i++) {
+    var anchor = detail[i];
+    var todayVal = anchor.daily_paid[dateIndex] || 0;
+    var yesterdayVal = (prevDate && dateIndex > 0) ? (anchor.daily_paid[dateIndex - 1] || 0) : 0;
+    var change = prevDate ? (todayVal - yesterdayVal) : 0;
+    if (Math.abs(change) >= 0.01) rows.push({ name: anchor.name, douyin_id: anchor.douyin_id, today: todayVal, yesterday: yesterdayVal, change: change });
+  }
+  rows.sort(function(a, b) { return a.change - b.change; });
+
+  window.__personDrillRows = rows;
+  window.__personDrillPrevDate = prevDate;
+  window.__personDrillClickedDate = clickedDate;
+
+  var changeArrow = totalChange >= 0 ? '↑' : '↓';
+  var changeCls = totalChange >= 0 ? 'drill-up' : 'drill-down';
+  var changeSign = totalChange >= 0 ? '+' : '';
+  var titleHtml = '自达号';
+  if (prevDate) titleHtml += ' · ' + clickedDate + ' 较 ' + prevDate + ' <span class="' + changeCls + '">' + changeArrow + ' ' + changeSign + totalChange.toFixed(2) + '万</span>';
+  else titleHtml += ' · ' + clickedDate + '（首日，无前日对比）';
+  document.getElementById('personDrillTitle').innerHTML = titleHtml;
+  document.getElementById('personDrillSubtitle').textContent = '共 ' + detail.length + ' 位达人，显示变化量 ≥ 0.01万的 ' + rows.length + ' 位';
+  document.getElementById('personDrillHead').innerHTML = '<th style="width:35%;text-align:left;">达人名称</th><th style="width:20%;">当日(' + clickedDate + ')</th><th style="width:20%;">前日(' + (prevDate || '--') + ')</th><th style="width:25%;">变化量</th>';
+
+  renderPersonDrillBody(rows, prevDate);
+  resetPersonDrillFilter();
+  document.getElementById('personDrillModal').style.display = 'flex';
+}
+
+function showZidahaoSubDrill(subName, dateIndex) {
+  if (!DATA || !DATA.anchor_detail || DATA.anchor_detail.length === 0) { alert('暂无自达号达人明细数据'); return; }
+  var detail = DATA.anchor_detail.filter(function(a) { return a.agency === subName; });
+  if (detail.length === 0) { alert(subName + ' 暂无达人数据'); return; }
+
+  var dates = DATA.trend_dates || [];
+  var clickedDate = dates[dateIndex] || '--';
+  var prevDate = dateIndex > 0 ? dates[dateIndex - 1] : null;
+  var dailySub = (DATA.daily_by_sub || {})[subName] || [];
+  var todayTotal = dailySub[dateIndex] || 0;
+  var yesterdayTotal = prevDate ? (dailySub[dateIndex - 1] || 0) : 0;
+  var totalChange = prevDate ? (todayTotal - yesterdayTotal) : 0;
+
+  var rows = [];
+  for (var i = 0; i < detail.length; i++) {
+    var anchor = detail[i];
+    var todayVal = anchor.daily_paid[dateIndex] || 0;
+    var yesterdayVal = (prevDate && dateIndex > 0) ? (anchor.daily_paid[dateIndex - 1] || 0) : 0;
+    var change = prevDate ? (todayVal - yesterdayVal) : 0;
+    if (Math.abs(change) >= 0.01) rows.push({ name: anchor.name, douyin_id: anchor.douyin_id, today: todayVal, yesterday: yesterdayVal, change: change });
+  }
+  rows.sort(function(a, b) { return a.change - b.change; });
+
+  window.__personDrillRows = rows;
+  window.__personDrillPrevDate = prevDate;
+  window.__personDrillClickedDate = clickedDate;
+
+  var changeArrow = totalChange >= 0 ? '↑' : '↓';
+  var changeCls = totalChange >= 0 ? 'drill-up' : 'drill-down';
+  var changeSign = totalChange >= 0 ? '+' : '';
+  var titleHtml = subName;
+  if (prevDate) titleHtml += ' · ' + clickedDate + ' 较 ' + prevDate + ' <span class="' + changeCls + '">' + changeArrow + ' ' + changeSign + totalChange.toFixed(2) + '万</span>';
+  else titleHtml += ' · ' + clickedDate + '（首日，无前日对比）';
+  document.getElementById('personDrillTitle').innerHTML = titleHtml;
+  document.getElementById('personDrillSubtitle').textContent = '共 ' + detail.length + ' 位达人，显示变化量 ≥ 0.01万的 ' + rows.length + ' 位';
+  document.getElementById('personDrillHead').innerHTML = '<th style="width:35%;text-align:left;">达人名称</th><th style="width:20%;">当日(' + clickedDate + ')</th><th style="width:20%;">前日(' + (prevDate || '--') + ')</th><th style="width:25%;">变化量</th>';
+
+  renderPersonDrillBody(rows, prevDate);
+  resetPersonDrillFilter();
+  document.getElementById('personDrillModal').style.display = 'flex';
+}
+
+function renderPersonDrillBody(rows, prevDate) {
+  var tbodyHtml = '';
+  if (rows.length === 0) {
+    tbodyHtml = '<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text2);">暂无显著变化（≥ 0.01万）的达人数据</td></tr>';
+  } else {
+    for (var j = 0; j < rows.length; j++) {
+      var row = rows[j];
+      var cls = row.change > 0 ? 'drill-up' : (row.change < 0 ? 'drill-down' : '');
+      var sign = row.change >= 0 ? '+' : '';
+      tbodyHtml += '<tr><td style="text-align:left;">' + row.name + '</td><td>' + row.today.toFixed(2) + '万</td><td>' + (prevDate ? row.yesterday.toFixed(2) + '万' : '--') + '</td><td class="' + cls + '">' + sign + row.change.toFixed(2) + '万</td></tr>';
+    }
+  }
+  document.getElementById('personDrillBody').innerHTML = tbodyHtml;
+}
+
+function resetPersonDrillFilter() {
+  var filterBar = document.getElementById('personDrillFilter');
+  filterBar.style.display = 'flex';
+  filterBar.querySelectorAll('button').forEach(function(b) {
+    b.classList.toggle('active', b.getAttribute('data-filter') === 'all');
+  });
+}
+
+function filterPersonDrill(filter) {
+  var allRows = window.__personDrillRows || [];
+  var prevDate = window.__personDrillPrevDate;
+  var filtered = allRows;
+  if (filter === 'down') filtered = allRows.filter(function(r) { return r.change < 0; });
+  else if (filter === 'up') filtered = allRows.filter(function(r) { return r.change > 0; }).reverse();
+
+  document.querySelectorAll('.drill-filter-btn').forEach(function(b) {
+    b.classList.toggle('active', b.getAttribute('data-filter') === filter);
+  });
+
+  var tbodyHtml = '';
+  if (filtered.length === 0) {
+    var label = filter === 'down' ? '下降' : (filter === 'up' ? '上涨' : '显著变化');
+    tbodyHtml = '<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text2);">暂无' + label + '的达人数据</td></tr>';
+  } else {
+    for (var j = 0; j < filtered.length; j++) {
+      var row = filtered[j];
+      var cls = row.change > 0 ? 'drill-up' : (row.change < 0 ? 'drill-down' : '');
+      var sign = row.change >= 0 ? '+' : '';
+      tbodyHtml += '<tr><td style="text-align:left;">' + row.name + '</td><td>' + row.today.toFixed(2) + '万</td><td>' + (prevDate ? row.yesterday.toFixed(2) + '万' : '--') + '</td><td class="' + cls + '">' + sign + row.change.toFixed(2) + '万</td></tr>';
+    }
+  }
+  document.getElementById('personDrillBody').innerHTML = tbodyHtml;
+  document.getElementById('personDrillSubtitle').textContent = '共 ' + allRows.length + ' 位达人，筛选显示 ' + filtered.length + ' 位';
+}
+
+function closePersonDrillModal() { document.getElementById('personDrillModal').style.display = 'none'; }
+
+// ═══════════════════════════════════════════════
+// Zidahao ROI drill
+// ═══════════════════════════════════════════════
+function showZidahaoRoiDrill() {
+  if (!DATA) return;
+  const cc = getChartColors();
+  const dates = DATA.trend_dates || [];
+  if (dates.length === 0) return;
+
+  let subDailyRoi = DATA.daily_roi_by_sub || {};
+  if (!subDailyRoi || Object.keys(subDailyRoi).length === 0) {
+    // Fallback: compute from anchor_daily_roi
+    const roiData = DATA.anchor_daily_roi || {};
+    const subMap = {};
+    (DATA.anchors || []).forEach(a => {
+      const sub = a['机构'] || '其他';
+      const douyin = String(a['主播抖音号'] || '');
+      if (!subMap[sub]) subMap[sub] = [];
+      subMap[sub].push(douyin);
+    });
+    subDailyRoi = {};
+    for (const [sub, douyins] of Object.entries(subMap)) {
+      subDailyRoi[sub] = dates.map(d => {
+        let gmvSum = 0, adSum = 0;
+        douyins.forEach(did => {
+          const roiD = roiData[did] || {};
+          const r = roiD[d];
+          if (r !== undefined && r > 0) {
+            // Can't reverse-engineer GMV/ad from ROI alone, use simple average
+            gmvSum += r;
+            adSum += 1;
+          }
+        });
+        return adSum > 0 ? +(gmvSum / adSum).toFixed(2) : null;
+      });
+    }
+  }
+
+  document.getElementById('zidahaoRoiDrillModal').style.display = 'flex';
+  const ctx = document.getElementById('zidahaoRoiDrillChart').getContext('2d');
+  if (window.__zidahaoRoiDrillChart) window.__zidahaoRoiDrillChart.destroy();
+
+  const orderedSubs = ZDH_SUB_AGENCIES.filter(s => subDailyRoi[s]);
+  const subColors = ['#818cf8','#22c55e','#f59e0b','#ec4899','#14b8a6','#f97316','#a78bfa'];
+
+  const datasets = orderedSubs.map((sub, i) => ({
+    label: sub, data: subDailyRoi[sub] || [],
+    borderColor: subColors[i % subColors.length], backgroundColor: 'transparent',
+    borderWidth: 2, pointRadius: 2, pointHoverRadius: 5, tension: 0.35
+  }));
+
+  // Add overall line
+  if (DATA.daily_roi_overall && DATA.daily_roi_overall.length > 0) {
+    datasets.push({
+      label: '整体ROI', data: DATA.daily_roi_overall,
+      borderColor: '#a78bfa', backgroundColor: 'transparent',
+      borderWidth: 2.5, pointRadius: 3, pointHoverRadius: 6, tension: 0.35, borderDash: [6, 3]
+    });
+  }
+
+  window.__zidahaoRoiDrillChart = new Chart(ctx, {
+    type: 'line', data: { labels: dates, datasets: datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      onClick: function(evt, elements) {
+        const chart = window.__zidahaoRoiDrillChart;
+        if (!chart) return;
+        if (elements.length === 0) {
+          let hasHidden = false;
+          for (var i = 0; i < chart.data.datasets.length; i++) { if (chart.getDatasetMeta(i).hidden) hasHidden = true; }
+          if (hasHidden) {
+            for (var i = 0; i < chart.data.datasets.length; i++) chart.getDatasetMeta(i).hidden = false;
+            chart.update();
+            document.getElementById('roiDrillShowAllBtn').style.display = 'none';
+          }
+          return;
+        }
+        var clickedIdx = elements[0].datasetIndex;
+        chart.getDatasetMeta(clickedIdx).hidden = true;
+        chart.update();
+        document.getElementById('roiDrillShowAllBtn').style.display = 'inline-block';
+      },
+      plugins: {
+        legend: { position: 'top', labels: { color: cc.legend, font: { size: 11 }, padding: 12, boxWidth: 12, usePointStyle: true, pointStyle: 'circle' },
+          onClick: function(evt, legendItem, legend) {
+            const chart = legend.chart;
+            const idx = legendItem.datasetIndex;
+            chart.getDatasetMeta(idx).hidden = !chart.getDatasetMeta(idx).hidden;
+            chart.update();
+            const anyHidden = chart.data.datasets.some((_, i) => chart.getDatasetMeta(i).hidden);
+            document.getElementById('roiDrillShowAllBtn').style.display = anyHidden ? 'inline-block' : 'none';
+          }
+        },
+        tooltip: { backgroundColor: cc.tooltipBg, titleColor: cc.tooltipTitle, bodyColor: cc.tooltipBody, borderColor: cc.tooltipBorder, borderWidth: 1, padding: 10, cornerRadius: 8,
+          callbacks: { label: ctx => { const v = ctx.parsed.y; return v !== null ? ctx.dataset.label + ': ROI ' + v.toFixed(2) : ctx.dataset.label + ': 无数据'; } }
+        }
+      },
+      scales: { x: { grid: { color: cc.grid }, ticks: { color: cc.tick, font: { size: 10 } } }, y: { grid: { color: cc.grid }, ticks: { color: cc.tick, font: { size: 10 } }, title: { display: true, text: 'ROI', color: cc.tick, font: { size: 11 } } } }
+    }
+  });
+}
+
+function resetRoiDrill() {
+  const chart = window.__zidahaoRoiDrillChart;
+  if (!chart) return;
+  for (let i = 0; i < chart.data.datasets.length; i++) chart.getDatasetMeta(i).hidden = false;
+  document.getElementById('roiDrillShowAllBtn').style.display = 'none';
+  chart.update();
+}
+
+// Close modals on overlay click
+document.getElementById('drillModal').addEventListener('click', function(e) { if (e.target === this) closeDrillModal(); });
+document.getElementById('agencyDrillModal').addEventListener('click', function(e) { if (e.target === this) closeAgencyDrill(); });
+document.getElementById('personDrillModal').addEventListener('click', function(e) { if (e.target === this) closePersonDrillModal(); });
+document.getElementById('zidahaoRoiDrillModal').addEventListener('click', function(e) { if (e.target === this) this.style.display = 'none'; });
+</script>
+
+</body>
+</html>
