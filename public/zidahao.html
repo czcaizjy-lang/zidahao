@@ -99,8 +99,15 @@ thead th {
   border-bottom: 1px solid var(--border); white-space: nowrap;
   cursor: pointer; user-select: none; position: sticky; top: 0;
 }
-thead th.col-resize-handle { cursor: col-resize; }
+thead th .col-resize-handle {
+  position: absolute; right: 0; top: 0; bottom: 0;
+  width: 6px; cursor: col-resize; z-index: 10;
+}
+thead th .col-resize-handle:hover { background: var(--accent); }
+thead th .col-resize-handle.active { background: var(--accent); }
 thead th:hover { color: var(--text); }
+thead th .sort-ind { font-size: 10px; margin-left: 4px; opacity: 0.4; }
+thead th .sort-ind.active { opacity: 1; color: var(--accent2); }
 tbody td { padding: 11px 14px; border-bottom: 1px solid var(--border); color: var(--text); white-space: nowrap; }
 tbody tr:hover { background: rgba(129,140,248,0.05); }
 tbody tr:last-child td { border-bottom: none; }
@@ -281,6 +288,8 @@ let sortCol = '直播GMV';
 let sortDir = -1;
 let currentTheme = 'dark';
 let colWidths = {}; // colKey → px width
+let draggedCol = null;
+let resizeState = null;
 
 const ZDH_SUB_AGENCIES = ['花开自达号', '集米自达号', '太古自达号', '九三自达号', '直属自达号', '半兆自达号', '久酒自达号'];
 const ZDH_PIE_COLORS = ['#818cf8','#22c55e','#f59e0b','#ec4899','#14b8a6','#f97316','#a78bfa'];
@@ -583,6 +592,119 @@ function renderAllCharts() {
 // ═══════════════════════════════════════════════
 let savedColOrder = null;
 
+// ---- 列拖拽排序 ----
+function startDrag(col, evt) {
+  draggedCol = col;
+  evt.dataTransfer.effectAllowed = 'move';
+  evt.dataTransfer.setData('text/plain', col);
+  setTimeout(() => evt.target.style.opacity = '0.4', 0);
+}
+
+function endDrag(evt) {
+  evt.target.style.opacity = '1';
+  draggedCol = null;
+  document.querySelectorAll('thead th').forEach(th => {
+    th.style.borderLeft = '';
+    th.style.borderRight = '';
+  });
+}
+
+function dragOver(col, evt) {
+  evt.preventDefault();
+  evt.dataTransfer.dropEffect = 'move';
+  document.querySelectorAll('thead th').forEach(th => {
+    th.style.borderLeft = '';
+    th.style.borderRight = '';
+  });
+  const target = evt.currentTarget;
+  if (draggedCol && col !== draggedCol) {
+    const cols = getCols();
+    const draggedIdx = cols.indexOf(draggedCol);
+    const targetIdx = cols.indexOf(col);
+    if (draggedIdx < targetIdx) {
+      target.style.borderRight = '2px solid #818cf8';
+    } else {
+      target.style.borderLeft = '2px solid #818cf8';
+    }
+  }
+}
+
+function dropCol(targetCol, evt) {
+  evt.preventDefault();
+  if (!draggedCol || draggedCol === targetCol) return;
+  const cols = getCols();
+  const fromIdx = cols.indexOf(draggedCol);
+  const toIdx = cols.indexOf(targetCol);
+  if (fromIdx === -1 || toIdx === -1) return;
+  cols.splice(fromIdx, 1);
+  cols.splice(toIdx, 0, draggedCol);
+  savedColOrder = cols;
+  renderAnchorTable();
+}
+
+// ---- 列宽拖拽 ----
+function initResize(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  const th = e.currentTarget.closest('th');
+  if (!th) return;
+  resizeState = {
+    startX: e.clientX,
+    startWidth: th.offsetWidth,
+    th: th
+  };
+  const handle = th.querySelector('.col-resize-handle');
+  if (handle) handle.classList.add('active');
+  document.body.style.userSelect = 'none';
+  document.body.style.cursor = 'col-resize';
+  document.addEventListener('mousemove', onResizeMove);
+  document.addEventListener('mouseup', onResizeEnd);
+}
+
+function onResizeMove(e) {
+  if (!resizeState) return;
+  const delta = e.clientX - resizeState.startX;
+  const newWidth = Math.max(50, resizeState.startWidth + delta);
+  resizeState.th.style.width = newWidth + 'px';
+  resizeState.th.style.minWidth = newWidth + 'px';
+}
+
+function onResizeEnd() {
+  if (!resizeState) return;
+  const handle = resizeState.th.querySelector('.col-resize-handle');
+  if (handle) handle.classList.remove('active');
+  document.body.style.userSelect = '';
+  document.body.style.cursor = '';
+  saveColumnWidths();
+  resizeState = null;
+  document.removeEventListener('mousemove', onResizeMove);
+  document.removeEventListener('mouseup', onResizeEnd);
+}
+
+function saveColumnWidths() {
+  const widths = {};
+  document.querySelectorAll('#anchorHead th').forEach(th => {
+    const col = th.getAttribute('data-col') || '#';
+    widths[col] = th.offsetWidth;
+  });
+  localStorage.setItem('zdhAnchorColWidths', JSON.stringify(widths));
+}
+
+function applyColumnWidths() {
+  const saved = localStorage.getItem('zdhAnchorColWidths');
+  if (!saved) return;
+  try {
+    const widths = JSON.parse(saved);
+    document.querySelectorAll('#anchorHead th').forEach(th => {
+      const col = th.getAttribute('data-col') || '#';
+      if (widths[col]) {
+        th.style.width = widths[col] + 'px';
+        th.style.minWidth = widths[col] + 'px';
+      }
+    });
+  } catch(e) {}
+}
+
 function renderAnchorTable() {
   if (!DATA || !DATA.anchors) return;
   let anchors = [...DATA.anchors];
@@ -619,12 +741,16 @@ function renderAnchorTable() {
   const cols = getCols();
 
   // Head
-  let headHtml = '';
-  cols.forEach(col => {
-    const arrow = sortCol === col ? (sortDir === -1 ? ' ↓' : ' ↑') : '';
-    headHtml += `<th class="col-resize-handle" data-col="${col}" onclick="sortBy('${col}')">${col}${arrow}</th>`;
+  let headHtml = '<th data-col="#"><span>#</span><div class="col-resize-handle" onmousedown="initResize(event)"></div></th>';
+  const centerFrom = 2; // 从索引2开始居中（开播天数）
+  cols.forEach((col, idx) => {
+    const isActive = sortCol === col;
+    const arrow = isActive ? (sortDir === -1 ? '▼' : '▲') : '▼';
+    const alignStyle = idx >= centerFrom ? 'text-align: center;' : '';
+    headHtml += `<th data-col="${col}" draggable="true" ondragstart="startDrag('${col}', event)" ondragend="endDrag(event)" ondragover="dragOver('${col}', event)" ondrop="dropCol('${col}', event)" onclick="sortBy('${col}')" style="cursor: grab;${alignStyle}"><span>${col}</span><span class="sort-ind ${isActive ? 'active' : ''}">${arrow}</span><div class="col-resize-handle" onmousedown="initResize(event)"></div></th>`;
   });
-  document.getElementById('anchorHead').innerHTML = '<th style="width:40px;">#</th>' + headHtml;
+  document.getElementById('anchorHead').innerHTML = headHtml;
+  applyColumnWidths();
 
   // Body
   let bodyHtml = '';
