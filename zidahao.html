@@ -108,7 +108,7 @@ thead th .col-resize-handle.active { background: var(--accent); }
 thead th:hover { color: var(--text); }
 thead th .sort-ind { font-size: 10px; margin-left: 4px; opacity: 0.4; }
 thead th .sort-ind.active { opacity: 1; color: var(--accent2); }
-tbody td { padding: 11px 14px; border-bottom: 1px solid var(--border); color: var(--text); white-space: nowrap; }
+tbody td { padding: 11px 14px; border-bottom: 1px solid var(--border); color: var(--text); white-space: nowrap; text-align: center; }
 tbody tr:hover { background: rgba(129,140,248,0.05); }
 tbody tr:last-child td { border-bottom: none; }
 .tag { padding: 3px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; }
@@ -740,8 +740,8 @@ function renderAnchorTable() {
   const cols = getCols();
 
   // Head
-  let headHtml = '<th data-col="#"><span>#</span><div class="col-resize-handle" onmousedown="initResize(event)"></div></th>';
-  const centerFrom = 2; // 从索引2开始居中（开播天数）
+  let headHtml = '<th data-col="#" style="text-align:center;"><span>#</span><div class="col-resize-handle" onmousedown="initResize(event)"></div></th>';
+  const centerFrom = 1; // 从索引1开始居中（除主播昵称外全居中）
   cols.forEach((col, idx) => {
     const isActive = sortCol === col;
     const arrow = isActive ? (sortDir === -1 ? '▼' : '▲') : '▼';
@@ -763,7 +763,7 @@ function renderAnchorTable() {
       let val = a[col];
       let type = getColType(col);
       if (col === '主播昵称') {
-        bodyHtml += `<td><div style="font-weight:500">${val || '-'}</div></td>`;
+        bodyHtml += `<td style="text-align:left;"><div style="font-weight:500">${val || '-'}</div></td>`;
       } else if (col === '直播GMV' && val && maxGMV > 0) {
         let pct = ((parseFloat(val)/maxGMV)*100).toFixed(0);
         const did = String(douyinId).replace(/'/g, "\\'");
