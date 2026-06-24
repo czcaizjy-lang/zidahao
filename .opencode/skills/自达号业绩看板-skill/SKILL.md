@@ -129,6 +129,9 @@ KPI 卡片（GMV / 支付 / 结算 / 消耗 / ROI），ROI 卡片可点击查看
 ### 交互
 
 - **主题切换**: Header 右侧 🌙/☀️ 按钮，深色/浅色双主题，保存到 localStorage（key: `zdhDashboardTheme`）
+- **列拖拽排序**: 拖拽达人表列头可任意调整列顺序，当前会话生效
+- **列宽拖拽调整**: 拖拽达人表列头右边缘可调整列宽（最小 50px），自动保存到 localStorage（key: `zdhAnchorColWidths`）
+- **GMV bar 可视化**: 达人「直播GMV」列带进度条背景（最大值占比），上下各保留 3px 间距，避免贴边
 - **子机构趋势图聚焦**: 点击单条线只显示该子机构，再点恢复全部
 - **自达号总业绩下探**（`showZidahaoDrill()`）: 点击总趋势图数据点，弹出所有自达号达人当日 vs 前日变化明细，按掉量降序
 - **自达号子机构下探**（`showZidahaoSubDrill()`）: 点击子机构趋势图数据点，弹出该子机构达人变化明细，按掉量降序
@@ -169,9 +172,8 @@ KPI 卡片（GMV / 支付 / 结算 / 消耗 / ROI），ROI 卡片可点击查看
 
 ### 线上地址
 
-GitHub Pages（待创建仓库后确定）：
-- `https://<username>.github.io/<repo>/` → `public/index.html`
-- `https://<username>.github.io/<repo>/zidahao.html` → `public/zidahao.html`
+- **GitHub Pages**: https://czcaizjy-lang.github.io/zidahao/
+- 仓库：`github.com/czcaizjy-lang/zidahao`
 
 ### 本地开发预览
 
