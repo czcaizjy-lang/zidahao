@@ -267,8 +267,7 @@ tbody tr:last-child td { border-bottom: none; }
 <div id="zidahaoRoiDrillModal" class="modal-overlay">
   <div class="modal-box" style="max-width:800px;">
     <button class="modal-close" onclick="document.getElementById('zidahaoRoiDrillModal').style.display='none'">&times;</button>
-    <div class="modal-title" id="zidahaoRoiDrillTitle">自达号 · 各机构每日 ROI 趋势</div>
-    <button id="roiDrillShowAllBtn" class="show-all-btn" style="margin-bottom:8px;display:none;" onclick="resetRoiDrill()">全部显示</button>
+    <div class="modal-title" id="zidahaoRoiDrillTitle">自达号 · 整体 ROI 趋势</div>
     <div class="chart-canvas-wrap" style="height:380px;"><canvas id="zidahaoRoiDrillChart"></canvas></div>
   </div>
 </div>
@@ -1008,105 +1007,31 @@ function showZidahaoRoiDrill() {
   const dates = DATA.trend_dates || [];
   if (dates.length === 0) return;
 
-  let subDailyRoi = DATA.daily_roi_by_sub || {};
-  if (!subDailyRoi || Object.keys(subDailyRoi).length === 0) {
-    // Fallback: compute from anchor_daily_roi
-    const roiData = DATA.anchor_daily_roi || {};
-    const subMap = {};
-    (DATA.anchors || []).forEach(a => {
-      const sub = a['机构'] || '其他';
-      const douyin = String(a['主播抖音号'] || '');
-      if (!subMap[sub]) subMap[sub] = [];
-      subMap[sub].push(douyin);
-    });
-    subDailyRoi = {};
-    for (const [sub, douyins] of Object.entries(subMap)) {
-      subDailyRoi[sub] = dates.map(d => {
-        let gmvSum = 0, adSum = 0;
-        douyins.forEach(did => {
-          const roiD = roiData[did] || {};
-          const r = roiD[d];
-          if (r !== undefined && r > 0) {
-            // Can't reverse-engineer GMV/ad from ROI alone, use simple average
-            gmvSum += r;
-            adSum += 1;
-          }
-        });
-        return adSum > 0 ? +(gmvSum / adSum).toFixed(2) : null;
-      });
-    }
-  }
-
   document.getElementById('zidahaoRoiDrillModal').style.display = 'flex';
   const ctx = document.getElementById('zidahaoRoiDrillChart').getContext('2d');
   if (window.__zidahaoRoiDrillChart) window.__zidahaoRoiDrillChart.destroy();
 
-  const orderedSubs = ZDH_SUB_AGENCIES.filter(s => subDailyRoi[s]);
-  const subColors = ['#818cf8','#22c55e','#f59e0b','#ec4899','#14b8a6','#f97316','#a78bfa'];
-
-  const datasets = orderedSubs.map((sub, i) => ({
-    label: sub, data: subDailyRoi[sub] || [],
-    borderColor: subColors[i % subColors.length], backgroundColor: 'transparent',
-    borderWidth: 2, pointRadius: 2, pointHoverRadius: 5, tension: 0.35
-  }));
-
-  // Add overall line
-  if (DATA.daily_roi_overall && DATA.daily_roi_overall.length > 0) {
-    datasets.push({
-      label: '整体ROI', data: DATA.daily_roi_overall,
-      borderColor: '#a78bfa', backgroundColor: 'transparent',
-      borderWidth: 2.5, pointRadius: 3, pointHoverRadius: 6, tension: 0.35, borderDash: [6, 3]
-    });
-  }
+  const overallRoi = DATA.daily_roi_overall || [];
+  const datasets = [{
+    label: '整体ROI', data: overallRoi,
+    borderColor: '#818cf8', backgroundColor: 'transparent',
+    borderWidth: 2.5, pointRadius: 3, pointHoverRadius: 6, tension: 0.35,
+    spanGaps: false
+  }];
 
   window.__zidahaoRoiDrillChart = new Chart(ctx, {
     type: 'line', data: { labels: dates, datasets: datasets },
     options: {
       responsive: true, maintainAspectRatio: false,
-      onClick: function(evt, elements) {
-        const chart = window.__zidahaoRoiDrillChart;
-        if (!chart) return;
-        if (elements.length === 0) {
-          let hasHidden = false;
-          for (var i = 0; i < chart.data.datasets.length; i++) { if (chart.getDatasetMeta(i).hidden) hasHidden = true; }
-          if (hasHidden) {
-            for (var i = 0; i < chart.data.datasets.length; i++) chart.getDatasetMeta(i).hidden = false;
-            chart.update();
-            document.getElementById('roiDrillShowAllBtn').style.display = 'none';
-          }
-          return;
-        }
-        var clickedIdx = elements[0].datasetIndex;
-        chart.getDatasetMeta(clickedIdx).hidden = true;
-        chart.update();
-        document.getElementById('roiDrillShowAllBtn').style.display = 'inline-block';
-      },
       plugins: {
-        legend: { position: 'top', labels: { color: cc.legend, font: { size: 11 }, padding: 12, boxWidth: 12, usePointStyle: true, pointStyle: 'circle' },
-          onClick: function(evt, legendItem, legend) {
-            const chart = legend.chart;
-            const idx = legendItem.datasetIndex;
-            chart.getDatasetMeta(idx).hidden = !chart.getDatasetMeta(idx).hidden;
-            chart.update();
-            const anyHidden = chart.data.datasets.some((_, i) => chart.getDatasetMeta(i).hidden);
-            document.getElementById('roiDrillShowAllBtn').style.display = anyHidden ? 'inline-block' : 'none';
-          }
-        },
+        legend: { display: false },
         tooltip: { backgroundColor: cc.tooltipBg, titleColor: cc.tooltipTitle, bodyColor: cc.tooltipBody, borderColor: cc.tooltipBorder, borderWidth: 1, padding: 10, cornerRadius: 8,
-          callbacks: { label: ctx => { const v = ctx.parsed.y; return v !== null ? ctx.dataset.label + ': ROI ' + v.toFixed(2) : ctx.dataset.label + ': 无数据'; } }
+          callbacks: { label: ctx => { const v = ctx.parsed.y; return v !== null ? 'ROI ' + v.toFixed(2) : '无数据'; } }
         }
       },
       scales: { x: { grid: { color: cc.grid }, ticks: { color: cc.tick, font: { size: 10 } } }, y: { grid: { color: cc.grid }, ticks: { color: cc.tick, font: { size: 10 } }, title: { display: true, text: 'ROI', color: cc.tick, font: { size: 11 } } } }
     }
   });
-}
-
-function resetRoiDrill() {
-  const chart = window.__zidahaoRoiDrillChart;
-  if (!chart) return;
-  for (let i = 0; i < chart.data.datasets.length; i++) chart.getDatasetMeta(i).hidden = false;
-  document.getElementById('roiDrillShowAllBtn').style.display = 'none';
-  chart.update();
 }
 
 // Close modals on overlay click
