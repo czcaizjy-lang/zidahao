@@ -344,7 +344,10 @@ def run():
         'pie_data': [
             {
                 'name': sub,
-                'value': round(sum(zdh_daily_by_sub.get(sub, defaultdict(float)).values()) / 10000, 2)
+                'value': round(sum(
+                    gmv for d, gmv in zdh_daily_by_sub.get(sub, defaultdict(float)).items()
+                    if d.startswith(current_month)
+                ) / 10000, 2)
             }
             for sub in ZDH_SUB_AGENCIES
             if sub in zdh_daily_by_sub
