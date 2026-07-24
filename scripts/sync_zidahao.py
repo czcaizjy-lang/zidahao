@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
 自达号业绩看板 - 数据提取脚本
-读取 6月总自达号业绩.xlsx，生成 zidahao_data.json
+花名册来自 6月总自达号业绩.xlsx，日流水与原蕉下看板共享数据源，生成 zidahao_data.json
 
 数据口径：
-  - 花名册（昵称/抖音号/机构归属）来自 Sheet2
-  - 所有数值指标（GMV/消耗/退款等）从「6月数据」日流水实时聚合
+  - 花名册（昵称/抖音号/机构归属）来自「Sheet2」（保留所有 7 个子机构含半兆/久酒）
+  - 所有数值指标（GMV/消耗/退款等）从业绩追击 Excel 的「X月直播数据」日流水实时聚合
   - 子机构：花开/集米/太古/九三/直属/半兆/久酒 共 7 个
 """
 
@@ -16,7 +16,10 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from openpyxl import load_workbook
 
-XLSX_PATH = '/Users/xiaocao/CC/自达号业绩看板/6月总自达号业绩.xlsx'
+# 花名册来源（保留 7 子机构含半兆/久酒）
+ROSTER_PATH = '/Users/xiaocao/CC/自达号业绩看板/6月总自达号业绩.xlsx'
+# 日流水来源（与原蕉下看板共享，X月直播数据）
+LIVE_XLSX_PATH = '/Users/xiaocao/Desktop/蕉下文件/业绩追击/by月业绩/6月业绩/6月业绩追击（纯直播）.xlsx'
 OUTPUT_PATH = '/Users/xiaocao/CC/自达号业绩看板/data/zidahao_data.json'
 ZDH_SUB_AGENCIES = ['花开自达号', '集米自达号', '太古自达号', '九三自达号', '直属自达号', '半兆自达号', '久酒自达号']
 TREND_DAYS = 30
@@ -29,13 +32,20 @@ def safe_float(v):
         return 0.0
 
 
-def run():
-    wb = load_workbook(XLSX_PATH, data_only=True)
+def find_live_sheet(wb):
+    """自动查找日流水 sheet（名称包含「直播数据」）"""
+    for name in wb.sheetnames:
+        if '直播数据' in name:
+            return name
+    raise ValueError(f'未找到直播数据 sheet，可用 sheets: {wb.sheetnames}')
 
+
+def run():
     # ═══════════════════════════════════════════
-    # === 1. 花名册（Sheet2）===
+    # === 1. 花名册（来自 6月总自达号业绩 Sheet2）===
     # ═══════════════════════════════════════════
-    ws_roster = wb['Sheet2']
+    wb_roster = load_workbook(ROSTER_PATH, data_only=True)
+    ws_roster = wb_roster['Sheet2']
     roster = {}          # douyin_id → {name, agency}
     roster_order = []    # 保持原始顺序
 
@@ -62,9 +72,12 @@ def run():
     print(f'  花名册: {len(roster)} 达人')
 
     # ═══════════════════════════════════════════
-    # === 2. 日流水（6月数据）===
+    # === 2. 日流水（业绩追击 Excel → X月直播数据）===
     # ═══════════════════════════════════════════
-    ws_live = wb['6月数据']
+    wb_live = load_workbook(LIVE_XLSX_PATH, data_only=True)
+    live_sheet_name = find_live_sheet(wb_live)
+    print(f'  日流水 sheet: {live_sheet_name}')
+    ws_live = wb_live[live_sheet_name]
 
     # 按抖音号 + 日期维度累加
     daily_gmv = defaultdict(lambda: defaultdict(float))

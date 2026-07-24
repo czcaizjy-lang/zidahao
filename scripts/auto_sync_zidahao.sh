@@ -7,7 +7,7 @@ set -e
 cd "/Users/xiaocao/CC/自达号业绩看板"
 
 LOG_FILE="data/sync_zidahao.log"
-EXCEL_PATH="/Users/xiaocao/CC/自达号业绩看板/6月总自达号业绩.xlsx"
+EXCEL_PATH="/Users/xiaocao/Desktop/蕉下文件/业绩追击/by月业绩/6月业绩/6月业绩追击（纯直播）.xlsx"
 LOCK_FILE="/tmp/zidahao_sync.lock"
 
 # ---- 消抖：两次执行必须间隔 >= 10 秒 ----
