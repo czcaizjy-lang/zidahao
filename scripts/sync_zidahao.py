@@ -7,6 +7,7 @@
   - 花名册（昵称/抖音号/机构归属）来自「Sheet2」（保留所有 7 个子机构含半兆/久酒）
   - 所有数值指标（GMV/消耗/退款等）从业绩追击 Excel 的「X月直播数据」日流水实时聚合
   - 子机构：花开/集米/太古/九三/直属/半兆/久酒 共 7 个
+  - KPI 汇总口径：仅统计当月消耗 > 0 的达人（达人列表全量保留）
 """
 
 import json
@@ -179,13 +180,16 @@ def run():
         }
 
     # ═══════════════════════════════════════════
-    # === 5. 汇总卡片 ===
+    # === 5. 汇总卡片（仅统计当月消耗 > 0 的达人）===
     # ═══════════════════════════════════════════
-    zdh_total_gmv = sum(a['直播GMV'] for a in zdh_anchor_monthly.values())
-    zdh_total_paid = sum(sum_month(daily_paid, did) for did in roster)
-    zdh_total_refund = sum(a['直播退款GMV'] for a in zdh_anchor_monthly.values())
+    zdh_active_anchors = {did: a for did, a in zdh_anchor_monthly.items() if a['投放消耗金额'] > 0}
+    zdh_total_gmv = sum(a['直播GMV'] for a in zdh_active_anchors.values())
+    zdh_total_paid = sum(a['直播支付GMV'] for a in zdh_active_anchors.values())
+    zdh_total_refund = sum(a['直播退款GMV'] for a in zdh_active_anchors.values())
     zdh_total_settle = round(zdh_total_paid - zdh_total_refund, 2)
-    zdh_total_ad = sum(a['投放消耗金额'] for a in zdh_anchor_monthly.values())
+    zdh_total_ad = sum(a['投放消耗金额'] for a in zdh_active_anchors.values())
+
+    print(f'  KPI 汇总口径：{len(zdh_active_anchors)}/{len(zdh_anchor_monthly)} 达人有消耗（消耗=0 不计入汇总）')
 
     summary = {
         '直播GMV': round(zdh_total_gmv, 2),
