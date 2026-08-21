@@ -53,7 +53,7 @@ fi
 
 # ---- ③ git push ----
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] ③ 推送至 GitHub..." | tee -a "$LOG_FILE"
-git add data/zidahao_data.json public/zidahao.html public/index.html 2>&1 | tee -a "$LOG_FILE"
+git add data/zidahao_data.json docs/zidahao.html docs/index.html 2>&1 | tee -a "$LOG_FILE"
 if git diff --cached --quiet; then
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] ✓ 无变更，跳过推送" | tee -a "$LOG_FILE"
 else

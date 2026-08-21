@@ -2,7 +2,7 @@
 """
 构建独立自达号看板 HTML 文件
 读取 zidahao.html（模板）和 zidahao_data.json（数据），
-生成内嵌数据的 public/zidahao.html 和 public/index.html（GitHub Pages 入口）。
+生成内嵌数据的 docs/zidahao.html 和 docs/index.html（GitHub Pages 入口，从分支 /docs 部署）。
 """
 
 import json
@@ -13,8 +13,8 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TEMPLATE_PATH = os.path.join(BASE_DIR, 'zidahao.html')
 DATA_PATH = os.path.join(BASE_DIR, 'data', 'zidahao_data.json')
 OUTPUT_PATHS = [
-    os.path.join(BASE_DIR, 'public', 'zidahao.html'),
-    os.path.join(BASE_DIR, 'public', 'index.html'),
+    os.path.join(BASE_DIR, 'docs', 'zidahao.html'),
+    os.path.join(BASE_DIR, 'docs', 'index.html'),
 ]
 
 OLD_FETCH = """fetch('data/zidahao_data.json?t=' + Date.now()).then(r => r.json()).then(d => {
